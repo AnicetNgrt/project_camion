@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;500;700&family=Fira+Sans:wght@100;200;300;400;500;600;700;800&family=Inter:wght@200;400;600;800&family=Jost:wght@200;300;400;500;600;700&family=Open+Sans+Condensed:wght@300;700&family=Playfair+Display:wght@400;500;600;700;800&family=Roboto:wght@100;300;400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap');
+
+.theme {
+    --font: 'Inter', sans-serif;
+    --title-font: 'Inter', sans-serif;
+}
+
+.theme-light {
+    --cbg: rgb(255, 255, 255);
+    --cfaint: white;
+    --ccontrast: black;
+    --ctext: black;
+    --caccent: rgb(0, 0, 0);
+    --caccent-faint: rgb(107, 240, 151);
+    --ccontrast-shadow: rgba(0, 0, 0, var(--sopac));
+    --caccent-shadow: rgba(0, 0, 0, var(--sopac));
+}
+
+.theme-dark {
+    --cbg: #2a2a2e;
+    --cfaint: #38383d;
+    --ccontrast: rgb(12, 12, 13);
+    --ctext: #d7d7db;
+    --caccent: rgb(12, 12, 13);
+    --caccent-faint: #9400ff;
+    --ccontrast-shadow: rgba(12, 12, 13, var(--sopac));
+    --caccent-shadow: rgba(12, 12, 13, var(--sopac));
+}
+
+.artdeco  {
+    --font: 'Roboto', sans-serif;
+    --title-font: 'Open Sans Condensed', serif;
+
+    --br: 0.5;
+    --ssmth: 0px;
+    --sopac: 0.2;
+    --bthic: 1;
+    --soffx: 0;
+    --soffy: 1;
+}
+
+.artdeco-light {
+    --cbg: rgb(200, 206, 211);
+    --cfaint: rgb(214, 224, 228);
+    --ccontrast: rgb(75, 32, 64);
+    --ctext: rgb(75, 32, 64);
+    --caccent: rgb(177, 31, 140);
+    --caccent-faint: rgb(214, 224, 228);
+    --ccontrast-shadow: rgba(95, 97, 105, var(--sopac));
+    --caccent-shadow: rgba(177, 31, 140, var(--sopac));
+} 
+
+.artdeco-dark  {
+    --cbg: rgb(36, 50, 59);
+    --cfaint: rgb(46, 56, 65);
+    --ccontrast: rgb(192, 173, 155);
+    --ctext: rgb(192, 173, 155);
+    --caccent: rgb(112, 202, 235);
+    --caccent-faint: rgb(52, 62, 68);
+    --ccontrast-shadow: rgba(0, 0, 0, var(--sopac));
+    --caccent-shadow: rgba(112, 202, 235, var(--sopac));
+}
+
+.minimalist {
+    --font: 'Roboto', sans-serif;
+    --title-font: 'Rubik', sans-serif;
+    --title-weight: 500;
+
+    --br: 5;
+    --ssmth: 15px;
+    --sopac: 0.75;
+    --bthic: 0;
+    --soffx: -1;
+    --soffy: 0.5;
+}
+
+.minimalist-light {
+    --cbg: rgb(255, 251, 228);
+    --cfaint: rgb(255, 251, 228);
+    --ccontrast: #242749;
+    --ctext: #242749;
+    --caccent: rgb(163, 79, 68);
+    --caccent-faint: rgb(255, 251, 228);
+    --ccontrast-shadow: rgba(168, 164, 137, var(--sopac));
+    --caccent-shadow: rgba(168, 164, 137, var(--sopac));
+}
+
+.minimalist-dark {
+    --cbg: #242749;
+    --cfaint: #242749;
+    --ccontrast: #a2c4ac;
+    --ctext: #a2c4ac;
+    --caccent: rgb(51, 154, 180);
+    --caccent-faint: #242749;
+    --ccontrast-shadow: rgba(12, 13, 29, var(--sopac));
+    --caccent-shadow: rgba(12, 13, 29, var(--sopac));
+}

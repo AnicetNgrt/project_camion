@@ -1,0 +1,86 @@
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+div, a, button, input, p, span, h1, h2, h3, h4, h5 {
+	color: var(--ctext);
+	font-family: var(--font);
+}
+
+svg {
+	color: inherit;
+}
+
+body {
+	min-height: 100vh;
+}
+
+@media (prefers-color-scheme: light) {
+    body {
+        background: #fff;
+    }
+}
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #333;
+    }
+}
+
+h1, h2, h3, h4, h5 {
+	font-family: var(--title-font);
+	width: max-content;
+	max-width: 100%;
+	font-weight: var(--title-weight);
+}
+
+h1.highlighted,
+h2.highlighted,
+h3.highlighted,
+h4.highlighted,
+h5.highlighted,
+p.highlighted,
+span.highlighted {
+	background-color: var(--caccent-faint);
+	padding-left: var(--padd);
+	padding-right: var(--padd);
+	border-radius: calc(0.33 * var(--brad));
+	color: var(--ccontrast);
+}
+
+h1 {
+	font-size: var(--mega);
+}
+
+h2 {
+	font-size: var(--xl);
+}
+
+h3 {
+	font-size: var(--lg);
+}
+
+h4 {
+	font-size: var(--md);
+}
+
+h5 {
+	font-size: var(--sm);
+	max-width: 80ch;
+}
+
+p, ul {
+	font-size: var(--sm);
+	max-width: 80ch;
+}
+
+ul {
+	margin-left: var(--sm);
+}
+
+.illustration {
+	max-width: 100%;
+	border: solid var(--bord) var(--ccontrast);
+	border-radius: 0.1em;
+}
