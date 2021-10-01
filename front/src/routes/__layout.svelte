@@ -39,7 +39,7 @@
     <meta property="og:image:height" content="{thumbnail_height}" />
 </svelte:head>
 
-<main class="theme theme-light theme-compute" class:unmounted>
+<main class="main-theme theme theme-light theme-compute" class:unmounted>
     <slot/>
 </main>
 
