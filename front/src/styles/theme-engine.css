@@ -3,12 +3,12 @@
     --title-font: serif;
     --title-weight: bold;
 
-    --br: 0.2;
-    --ssmth: 0px;
-    --sopac: 1;
-    --bthic: 2;
-    --soffy: 1;
-    --soffx: -0.7;
+    --br: 3;
+    --ssmth: 7px;
+    --sopac: 0.3;
+    --bthic: 3;
+    --soffy: 2;
+    --soffx: 2;
     --trans: 0.7;
 
     --global-size: 49px;
@@ -140,9 +140,9 @@
     --padd: 0.4em;
     --marg: 0.4em;
     --bord: calc(var(--bthic) * calc(0.025 * var(--global-size)));
-    --brad: calc(var(--br) * 0.25em);
-    --shad-offx: calc(var(--soffx) * 0.2em);
-    --shad-offy: calc(var(--soffy) * 0.2em);
-    --shad-offx-large: calc(var(--soffx) * 0.3em); 
-    --shad-offy-large: calc(var(--soffy) * 0.3em);
+    --brad: calc(var(--br) * calc(0.1 * var(--global-size)));
+    --shad-offx: calc(var(--soffx) * calc(0.06 * var(--global-size)));
+    --shad-offy: calc(var(--soffy) * calc(0.06 * var(--global-size)));
+    --shad-offx-large: calc(var(--soffx) * calc(0.09 * var(--global-size))); 
+    --shad-offy-large: calc(var(--soffy) * calc(0.09 * var(--global-size)));
 }

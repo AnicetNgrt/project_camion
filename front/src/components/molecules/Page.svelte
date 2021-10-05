@@ -4,12 +4,10 @@
 
 <style>
     div {
-		max-width: 100%;
-		max-height: 100%;
-		margin-right: 2px;
-		margin-bottom: 2px;
-		padding: var(--xxl);
-		box-shadow: 5px 5px 0 var(--ctext), inset 5px 5px 0 var(--ctext);
-		overflow: auto;
+		width: 100%;
+		min-height: 100%;
+		padding: var(--sm);
+		background: linear-gradient(35deg, #654695, rgb(166, 97, 255));
+		background-attachment: fixed;
 	}
 </style>
