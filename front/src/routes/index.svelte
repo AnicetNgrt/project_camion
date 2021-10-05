@@ -23,6 +23,7 @@ import Separator from "$components/atoms/Separator.svelte";
     </div>
     <Separator size="lg"/>
     <div class="joke-container">
+        <div class="joke-stamp"></div>
         <h3 class="joke-title">🚚 Le camion</h3>
         <Separator size="mi"/>
         <p class="joke-body">
@@ -59,11 +60,15 @@ import Separator from "$components/atoms/Separator.svelte";
         <h3 class="joke-title">🤯 Franchement retournant</h3>
         <Separator size="mi"/>
         <p class="joke-body">
-            <i>Félicie :</i> Demande moi si je suis un camion.
+            <i>Félicie :</i> Demande moi si je suis un liquide de refroidissement.
             <br/>
-            <i>Audience :</i> Est-ce que tu es un camion ?
+            <i>Audience :</i> Est-ce que tu es un liquide de refroidissement ?
             <br/>
-            <i>Félicie :</i> Non.
+            <i>Félicie :</i> Oui !
+            <br/>
+            <i>Audience :</i> Quoi ? Vraiment ?!
+            <br/>
+            <i>Félicie :</i> Non, j'ai menti :)
         </p>
     </div>
 
