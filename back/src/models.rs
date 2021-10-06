@@ -1,11 +1,7 @@
-extern crate chrono;
-
-#[derive(Queryable)]
-pub struct Post {
+#[derive(Queryable, Debug)]
+pub struct User {
     pub id: i32,
-    pub title: String,
-    pub body: String,
-    pub published: bool,
-    pub created_at: chrono::NaiveDateTime,
-    pub edited_at: chrono::NaiveDateTime,
+    pub username: String,
+    pub email: String,
+    pub password: String,
 }
