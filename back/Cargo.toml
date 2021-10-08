@@ -11,12 +11,4 @@ actix-web = "3"
 sqlx = { version = "0.4", features = [ "runtime-actix-native-tls", "postgres" ] }
 dotenv = "0.15.0"
 serde = "1"
-
-# -- Your SQL goes here
-
-# CREATE TABLE users (
-#     id SERIAL PRIMARY KEY NOT NULL,
-#     username VARCHAR NOT NULL,
-#     email VARCHAR NOT NULL,
-#     password VARCHAR NOT NULL
-# )
+regex = "1.5"
