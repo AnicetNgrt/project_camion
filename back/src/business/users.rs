@@ -51,20 +51,8 @@ impl UserRegistrationData {
                     ..
                 } = result
                 {
-                    match sqlx::query!(
-                        r#"
-                    INSERT INTO users ( username, email, password )
-                    VALUES ( $1, $2, $3 )
-                    RETURNING id
-                    "#,
-                        self.username,
-                        self.email,
-                        password_hash
-                    )
-                    .fetch_one(pool)
-                    .await
-                    {
-                        Ok(record) => result.id = Some(record.id),
+                    match insert_user(&self.username, &self.email, &password_hash, pool).await {
+                        Ok(id) => result.id = Some(id),
                         Err(db_error) => result.database_error = Some(db_error),
                     };
                 }
@@ -74,6 +62,23 @@ impl UserRegistrationData {
     }
 }
 
+async fn insert_user(username: &String, email: &String, password: &String, pool: &db::DbPool) -> Result<i32, sqlx::Error> {
+    let record = sqlx::query!(
+        r#"
+    INSERT INTO users ( username, email, password )
+    VALUES ( $1, $2, $3 )
+    RETURNING id
+    "#,
+        username,
+        email,
+        password
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(record.id)
+}
+
 pub enum UsernameIssues {
     CouldNotBeProcessed,
     TooShort,
@@ -81,7 +86,7 @@ pub enum UsernameIssues {
     NotUnique,
 }
 
-pub async fn username_find_issues(
+async fn username_find_issues(
     username: &String,
     pool: &db::DbPool,
 ) -> Option<Vec<UsernameIssues>> {
@@ -106,7 +111,7 @@ pub async fn username_find_issues(
     }
 }
 
-pub async fn username_is_unique(username: &String, pool: &db::DbPool) -> Result<bool, sqlx::Error> {
+async fn username_is_unique(username: &String, pool: &db::DbPool) -> Result<bool, sqlx::Error> {
     db::check_field_is_unique!("users", "username", username, pool)
 }
 
@@ -116,7 +121,7 @@ pub enum EmailIssues {
     NotUnique,
 }
 
-pub async fn email_find_issues(email: &String, pool: &db::DbPool) -> Option<Vec<EmailIssues>> {
+async fn email_find_issues(email: &String, pool: &db::DbPool) -> Option<Vec<EmailIssues>> {
     let mut issues = vec![];
 
     let email_regex = Regex::new(
@@ -140,6 +145,6 @@ pub async fn email_find_issues(email: &String, pool: &db::DbPool) -> Option<Vec<
     }
 }
 
-pub async fn email_is_unique(email: &String, pool: &db::DbPool) -> Result<bool, sqlx::Error> {
+async fn email_is_unique(email: &String, pool: &db::DbPool) -> Result<bool, sqlx::Error> {
     db::check_field_is_unique!("users", "email", email, pool)
 }
