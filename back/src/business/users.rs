@@ -1,6 +1,6 @@
 use crate::business::{db, security};
 use regex::Regex;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 pub struct User {
     pub id: i32,
@@ -10,59 +10,71 @@ pub struct User {
 }
 
 #[derive(Deserialize)]
-pub struct UserRegistrationData {
+pub struct RegistrationData {
     pub username: String,
     pub email: String,
     pub password: String,
 }
 
 #[derive(Deserialize)]
-pub struct UserLoginData {
+pub struct LoginData {
     pub login: String,
     pub password: String,
 }
 
-pub struct UserRegistrationResult {
-    id: Option<i32>,
-    username_issues: Option<Vec<UsernameIssues>>,
-    email_issues: Option<Vec<EmailIssues>>,
-    password_issues: Option<Vec<security::PasswordWeakness>>,
-    hashing_error: Option<argon2::password_hash::Error>,
-    database_error: Option<sqlx::Error>,
+#[derive(Serialize)]
+pub enum RegistrationError {
+    Data(RegistrationDataIssues),
+    PasswordHashing,
+    DatabaseInsertion,
+    JwtCreation,
 }
 
-impl UserRegistrationData {
-    pub async fn register(&self, pool: &db::DbPool) -> UserRegistrationResult {
-        let mut result = UserRegistrationResult {
-            id: None,
-            username_issues: username_find_issues(&self.username, pool).await,
-            email_issues: email_find_issues(&self.email, pool).await,
-            password_issues: security::password_find_weaknesses(&self.password),
-            hashing_error: None,
-            database_error: None,
-        };
-        match security::password_salt_and_hash(&self.password) {
-            Err(hashing_error) => result.hashing_error = Some(hashing_error),
-            Ok(password_hash) => {
-                if let UserRegistrationResult {
-                    username_issues: None,
-                    email_issues: None,
-                    password_issues: None,
-                    ..
-                } = result
-                {
-                    match insert_user(&self.username, &self.email, &password_hash, pool).await {
-                        Ok(id) => result.id = Some(id),
-                        Err(db_error) => result.database_error = Some(db_error),
-                    };
-                }
-            }
+type RegistrationDataIssues = (
+    Option<Vec<UsernameIssues>>,
+    Option<Vec<EmailIssues>>,
+    Option<Vec<security::PasswordWeakness>>,
+);
+
+impl RegistrationData {
+    async fn find_issues(&self, pool: &db::DbPool) -> Option<RegistrationDataIssues> {
+        match (
+            username_find_issues(&self.username, pool).await,
+            email_find_issues(&self.email, pool).await,
+            security::password_find_weaknesses(&self.password),
+        ) {
+            (None, None, None) => None,
+            issues => Some(issues),
         }
-        result
+    }
+
+    fn hash_password(&mut self) -> Result<(), ()> {
+        security::password_salt_and_hash(&self.password)
+            .map(|password_hash| self.password = password_hash)
+            .map_err(|_| ())
+    }
+
+    pub async fn register(&mut self, pool: &db::DbPool) -> Result<String, RegistrationError> {
+        if let Some(issues) = self.find_issues(&pool).await {
+            Err(RegistrationError::Data(issues))
+        } else if let Err(_) = self.hash_password() {
+            Err(RegistrationError::PasswordHashing)
+        } else if let Ok(id) = insert_user(&self.username, &self.email, &self.password, pool).await
+        {
+            security::jwt_create(&mut UserAuthJwtClaims { id, exp: 0 }, 120)
+                .map_err(|_| RegistrationError::JwtCreation)
+        } else {
+            Err(RegistrationError::DatabaseInsertion)
+        }
     }
 }
 
-async fn insert_user(username: &String, email: &String, password: &String, pool: &db::DbPool) -> Result<i32, sqlx::Error> {
+async fn insert_user(
+    username: &String,
+    email: &String,
+    password: &String,
+    pool: &db::DbPool,
+) -> Result<i32, sqlx::Error> {
     let record = sqlx::query!(
         r#"
     INSERT INTO users ( username, email, password )
@@ -79,6 +91,7 @@ async fn insert_user(username: &String, email: &String, password: &String, pool:
     Ok(record.id)
 }
 
+#[derive(Serialize)]
 pub enum UsernameIssues {
     CouldNotBeProcessed,
     TooShort,
@@ -86,10 +99,7 @@ pub enum UsernameIssues {
     NotUnique,
 }
 
-async fn username_find_issues(
-    username: &String,
-    pool: &db::DbPool,
-) -> Option<Vec<UsernameIssues>> {
+async fn username_find_issues(username: &String, pool: &db::DbPool) -> Option<Vec<UsernameIssues>> {
     let mut issues = vec![];
 
     if username.len() < 3 {
@@ -115,6 +125,7 @@ async fn username_is_unique(username: &String, pool: &db::DbPool) -> Result<bool
     db::check_field_is_unique!("users", "username", username, pool)
 }
 
+#[derive(Serialize)]
 pub enum EmailIssues {
     CouldNotBeProcessed,
     Malformed,
@@ -147,4 +158,16 @@ async fn email_find_issues(email: &String, pool: &db::DbPool) -> Option<Vec<Emai
 
 async fn email_is_unique(email: &String, pool: &db::DbPool) -> Result<bool, sqlx::Error> {
     db::check_field_is_unique!("users", "email", email, pool)
+}
+
+#[derive(Serialize)]
+struct UserAuthJwtClaims {
+    id: i32,
+    exp: usize,
+}
+
+impl security::JwtClaims for UserAuthJwtClaims {
+    fn set_expiration(&mut self, exp: usize) {
+        self.exp = exp;
+    }
 }

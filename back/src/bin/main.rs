@@ -1,6 +1,10 @@
 use camion::web::{server};
+use dotenv::dotenv;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    server::start().await
+    dotenv().ok();
+    server::start().await;
+
+    Ok(())
 }

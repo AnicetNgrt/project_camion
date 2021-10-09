@@ -1,4 +1,3 @@
-use dotenv::dotenv;
 use std::env;
 use sqlx::postgres::{PgPoolOptions};
 use sqlx::{Postgres, Pool};
@@ -6,8 +5,6 @@ use sqlx::{Postgres, Pool};
 pub type DbPool = Pool<Postgres>;
 
 pub async fn build_pool() -> Pool<Postgres> {
-    dotenv().ok();
-
     let database_url = env::var("DATABASE_URL")
         .expect("DATABASE_URL not set");
     PgPoolOptions::new()
@@ -33,7 +30,7 @@ macro_rules! check_field_is_unique {
         {
             Ok(_) => Ok(false),
             Err(db_error) => match db_error {
-                sqlx::Error::ColumnNotFound(_) => Ok(true),
+                sqlx::Error::RowNotFound => Ok(true),
                 _ => Err(db_error)
             }
         }
