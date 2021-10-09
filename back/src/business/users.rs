@@ -1,6 +1,6 @@
 use crate::business::{db, security};
-use serde::Deserialize;
 use regex::Regex;
+use serde::Deserialize;
 
 pub struct User {
     pub id: i32,
@@ -22,87 +22,121 @@ pub struct UserLoginData {
     pub password: String,
 }
 
-pub enum UserRegistrationError {
-    UsernameNotUnique,
-    UsernameInvalid(UsernameInvalidReason),
-    EmailNotUnique,
-    EmailInvalid(EmailInvalidReason),
-    PasswordWeak(Vec::<security::PasswordWeakness>),
-    DatabaseError(sqlx::Error),
+pub struct UserRegistrationResult {
+    id: Option<i32>,
+    username_issues: Option<Vec<UsernameIssues>>,
+    email_issues: Option<Vec<EmailIssues>>,
+    password_issues: Option<Vec<security::PasswordWeakness>>,
+    hashing_error: Option<argon2::password_hash::Error>,
+    database_error: Option<sqlx::Error>,
 }
 
 impl UserRegistrationData {
-    pub async fn register(&self, pool: &db::DbPool) -> Result<i32, UserRegistrationError> {
-        match username_check_validity(&self.username) {
-            Err(reason) => return Err(UserRegistrationError::UsernameInvalid(reason)),
-            _ => ()
+    pub async fn register(&self, pool: &db::DbPool) -> UserRegistrationResult {
+        let mut result = UserRegistrationResult {
+            id: None,
+            username_issues: username_find_issues(&self.username, pool).await,
+            email_issues: email_find_issues(&self.email, pool).await,
+            password_issues: security::password_find_weaknesses(&self.password),
+            hashing_error: None,
+            database_error: None,
         };
-        
-        match email_check_validity(&self.email) {
-            Err(reason) => return Err(UserRegistrationError::EmailInvalid(reason)),
-            _ => ()
-        };
-
-        match username_is_unique(&self.username, pool).await {
-            Ok(false) => return Err(UserRegistrationError::UsernameNotUnique),
-            Err(db_error) => return Err(UserRegistrationError::DatabaseError(db_error)),
-            _ => ()
-        };
-        
-        match email_is_unique(&self.email, pool).await {
-            Ok(false) => return Err(UserRegistrationError::EmailNotUnique),
-            Err(db_error) => return Err(UserRegistrationError::DatabaseError(db_error)),
-            _ => ()
-        };
-
-        match sqlx::query!(
-            r#"
-            INSERT INTO users ( username, email, password )
-            VALUES ( $1, $2, $3 )
-            RETURNING id
-            "#,
-            self.username,
-            self.email,
-            self.password
-        )
-        .fetch_one(pool)
-        .await
-        {
-            Ok(record) => Ok(record.id),
-            Err(db_error) => Err(UserRegistrationError::DatabaseError(db_error)),
+        match security::password_salt_and_hash(&self.password) {
+            Err(hashing_error) => result.hashing_error = Some(hashing_error),
+            Ok(password_hash) => {
+                if let UserRegistrationResult {
+                    username_issues: None,
+                    email_issues: None,
+                    password_issues: None,
+                    ..
+                } = result
+                {
+                    match sqlx::query!(
+                        r#"
+                    INSERT INTO users ( username, email, password )
+                    VALUES ( $1, $2, $3 )
+                    RETURNING id
+                    "#,
+                        self.username,
+                        self.email,
+                        password_hash
+                    )
+                    .fetch_one(pool)
+                    .await
+                    {
+                        Ok(record) => result.id = Some(record.id),
+                        Err(db_error) => result.database_error = Some(db_error),
+                    };
+                }
+            }
         }
+        result
     }
 }
 
-pub enum UsernameInvalidReason {
+pub enum UsernameIssues {
+    CouldNotBeProcessed,
     TooShort,
-    TooLong
+    TooLong,
+    NotUnique,
 }
 
-pub fn username_check_validity(username: &String) -> Result<(), UsernameInvalidReason> {
+pub async fn username_find_issues(
+    username: &String,
+    pool: &db::DbPool,
+) -> Option<Vec<UsernameIssues>> {
+    let mut issues = vec![];
+
     if username.len() < 3 {
-        return Err(UsernameInvalidReason::TooShort);
+        issues.push(UsernameIssues::TooShort);
+    } else if username.len() > 32 {
+        issues.push(UsernameIssues::TooLong);
+    } else {
+        match username_is_unique(username, pool).await {
+            Ok(false) => issues.push(UsernameIssues::NotUnique),
+            Err(_) => issues.push(UsernameIssues::CouldNotBeProcessed),
+            _ => (),
+        };
     }
-    if username.len() > 32 {
-        return Err(UsernameInvalidReason::TooLong);
+
+    if !issues.is_empty() {
+        Some(issues)
+    } else {
+        None
     }
-    Ok(())
 }
 
 pub async fn username_is_unique(username: &String, pool: &db::DbPool) -> Result<bool, sqlx::Error> {
     db::check_field_is_unique!("users", "username", username, pool)
 }
 
-pub enum EmailInvalidReason {
-    Malformed
+pub enum EmailIssues {
+    CouldNotBeProcessed,
+    Malformed,
+    NotUnique,
 }
 
-pub fn email_check_validity(email: &String) -> Result<(), EmailInvalidReason> {
-    let email_regex = Regex::new(r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})").unwrap();
-    if email_regex.is_match(email) {
-        Ok(())
+pub async fn email_find_issues(email: &String, pool: &db::DbPool) -> Option<Vec<EmailIssues>> {
+    let mut issues = vec![];
+
+    let email_regex = Regex::new(
+        r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})",
+    )
+    .unwrap();
+    if !email_regex.is_match(email) {
+        issues.push(EmailIssues::Malformed);
     } else {
-        Err(EmailInvalidReason::Malformed)
+        match email_is_unique(email, pool).await {
+            Ok(false) => issues.push(EmailIssues::NotUnique),
+            Err(_) => issues.push(EmailIssues::CouldNotBeProcessed),
+            _ => (),
+        };
+    }
+
+    if !issues.is_empty() {
+        Some(issues)
+    } else {
+        None
     }
 }
 
