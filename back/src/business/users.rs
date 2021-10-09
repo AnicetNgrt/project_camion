@@ -9,25 +9,6 @@ pub struct User {
     pub password: String,
 }
 
-pub type UserRow = (i32, String, String, String);
-
-impl From<UserRow> for User {
-    fn from(row: (i32, String, String, String)) -> Self {
-        User {
-            id: row.0,
-            username: row.1,
-            email: row.2,
-            password: row.3,
-        }
-    }
-}
-
-impl Into<UserRow> for User {
-    fn into(self) -> UserRow {
-        (self.id, self.username, self.email, self.password)
-    }
-}
-
 #[derive(Deserialize)]
 pub struct UserRegistrationData {
     pub username: String,
