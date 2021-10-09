@@ -1,4 +1,4 @@
-use crate::business::db;
+use crate::business::{db, security};
 use serde::Deserialize;
 use regex::Regex;
 
@@ -23,11 +23,11 @@ pub struct UserLoginData {
 }
 
 pub enum UserRegistrationError {
-    UsernameTaken,
+    UsernameNotUnique,
     UsernameInvalid(UsernameInvalidReason),
-    EmailTaken,
+    EmailNotUnique,
     EmailInvalid(EmailInvalidReason),
-    PasswordWeak,
+    PasswordWeak(Vec::<security::PasswordWeakness>),
     DatabaseError(sqlx::Error),
 }
 
@@ -44,13 +44,13 @@ impl UserRegistrationData {
         };
 
         match username_is_unique(&self.username, pool).await {
-            Ok(false) => return Err(UserRegistrationError::UsernameTaken),
+            Ok(false) => return Err(UserRegistrationError::UsernameNotUnique),
             Err(db_error) => return Err(UserRegistrationError::DatabaseError(db_error)),
             _ => ()
         };
         
         match email_is_unique(&self.email, pool).await {
-            Ok(false) => return Err(UserRegistrationError::EmailTaken),
+            Ok(false) => return Err(UserRegistrationError::EmailNotUnique),
             Err(db_error) => return Err(UserRegistrationError::DatabaseError(db_error)),
             _ => ()
         };
