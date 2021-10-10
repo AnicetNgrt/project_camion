@@ -1,15 +1,12 @@
-use std::env;
 use sqlx::postgres::{PgPoolOptions};
 use sqlx::{Postgres, Pool};
 
 pub type DbPool = Pool<Postgres>;
 
-pub async fn build_pool() -> Pool<Postgres> {
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL not set");
+pub async fn build_pool(database_url: &String) -> Pool<Postgres> {
     PgPoolOptions::new()
         .max_connections(5)
-        .connect(&database_url).await.unwrap()
+        .connect(database_url).await.unwrap()
 }
 
 macro_rules! query_one_where_field_equals {

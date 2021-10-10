@@ -27,14 +27,14 @@ async fn ping() -> Result<HttpResponse, Error> {
 #[post("/auth/register")]
 async fn register(
     api_state: web::Data<ApiState>,
-    register_data: web::Json<users::RegistrationData>,
+    register_data: web::Json<users::registration::Data>,
 ) -> HttpResponse {
     let (status, body) = match register_data.register(&&api_state.db_conn_pool).await {
         Ok(id) => (
             StatusCode::OK,
             format!("{{ registered: true, id: {} }}", id),
         ),
-        Err(users::RegistrationError::Data(issues)) => (
+        Err(users::registration::Error::Data(issues)) => (
             StatusCode::OK,
             format!(
                 "{{ registered: false, issues: {} }}",
