@@ -1,10 +1,12 @@
 use camion::{
-    business::{db},
+    business::db,
     web::application::{Application, Config},
 };
 use dotenv::dotenv;
 use std::env;
 use uuid::Uuid;
+
+mod auth_tests;
 
 pub struct TestApp {
     pub url: String,
@@ -33,26 +35,26 @@ pub async fn spawn_app() -> TestApp {
     let _ = tokio::spawn(app.run());
     TestApp {
         url: format!("http://{}:{}", host, app_port),
-        db_conn_pool: test_db_pool
+        db_conn_pool: test_db_pool,
     }
 }
 
 async fn setup_test_database(database_url_root: &String, name: &String) -> db::DbPool {
     // Creating test database
     let postgres_db_pool = db::build_pool(&format!("{}/postgres", database_url_root)).await;
-    
+
     sqlx::query(&format!("CREATE DATABASE \"{}\";", name).as_str())
         .execute(&postgres_db_pool)
         .await
         .unwrap();
-    
+
     // Running migrations on test database
     let test_db_pool = db::build_pool(&format!("{}/{}", database_url_root, name)).await;
     sqlx::migrate!("./migrations")
         .run(&test_db_pool)
         .await
         .unwrap();
-    
+
     test_db_pool
 }
 
@@ -68,8 +70,22 @@ async fn ping_test() {
     assert_eq!(body, "pong");
 }
 
-#[actix_rt::test]
-async fn register_test_username_syntax_rules() {
-    let app = spawn_app().await;
-    todo!("test username syntax rules");
+pub async fn post_json(
+    app: &TestApp,
+    route: &str,
+    json_body: serde_json::Value,
+) -> (reqwest::StatusCode, serde_json::Value) {
+    let res = reqwest::Client::new()
+        .post(format!("{}{}", app.url, route))
+        .json(&json_body)
+        .send()
+        .await
+        .unwrap();
+
+    let status = res.status();
+    let body = res.text().await.unwrap();
+    (
+        status, 
+        serde_json::from_str(&*body).unwrap(),
+    )
 }

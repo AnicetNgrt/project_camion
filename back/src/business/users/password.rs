@@ -28,9 +28,10 @@ pub fn find_weaknesses(password: &String) -> Option<Vec<Weakness>> {
         weaknesses.push(Weakness::NoSpecialChars);
     }
 
-    if password.chars().all(char::is_lowercase) {
+    if !password.chars().any(char::is_uppercase) {
         weaknesses.push(Weakness::NoUpperCase);
-    } else if password.chars().all(char::is_uppercase) {
+    }
+    if !password.chars().any(char::is_lowercase) {
         weaknesses.push(Weakness::NoLowerCase);
     }
 

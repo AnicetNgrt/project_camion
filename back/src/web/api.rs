@@ -1,5 +1,6 @@
 use crate::business::{db, users};
 use actix_web::{get, http::StatusCode, post, web, Error, HttpResponse, Scope};
+use serde_json::json;
 
 pub fn service(db_conn_pool: db::DbPool) -> Scope {
     web::scope("/api")
@@ -32,23 +33,28 @@ async fn register(
     let (status, body) = match register_data.register(&&api_state.db_conn_pool).await {
         Ok(id) => (
             StatusCode::OK,
-            format!("{{ registered: true, id: {} }}", id),
+            json!({
+                "registered": true,
+                "id": id
+            })
         ),
         Err(users::registration::Error::Data(issues)) => (
             StatusCode::OK,
-            format!(
-                "{{ registered: false, issues: {} }}",
-                serde_json::to_string(&issues).unwrap()
-            ),
+            json!({
+                "registered": false,
+                "issues": issues
+            })
         ),
         Err(error) => (
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("{{ error: {} }}", serde_json::to_string(&error).unwrap()),
+            json!({
+                "error": error
+            })
         ),
     };
     HttpResponse::build(status)
         .content_type("application/json")
-        .body(body)
+        .body(body.to_string())
 }
 
 #[post("/auth/login")]
