@@ -15,6 +15,4 @@ pub async fn start() {
         .run()
         .await
         .expect("server didn't start");
-
-    println!("HERE");
 }

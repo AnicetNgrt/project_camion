@@ -27,7 +27,6 @@ pub enum RegistrationError {
     Data(RegistrationDataIssues),
     PasswordHashing,
     DatabaseInsertion,
-    JwtCreation,
 }
 
 type RegistrationDataIssues = (
@@ -48,23 +47,25 @@ impl RegistrationData {
         }
     }
 
-    fn hash_password(&mut self) -> Result<(), ()> {
+    fn hash_password(&self) -> Result<String, ()> {
         security::password_salt_and_hash(&self.password)
-            .map(|password_hash| self.password = password_hash)
             .map_err(|_| ())
     }
 
-    pub async fn register(&mut self, pool: &db::DbPool) -> Result<String, RegistrationError> {
+    pub async fn register(&self, pool: &db::DbPool) -> Result<i32, RegistrationError> {
         if let Some(issues) = self.find_issues(&pool).await {
             Err(RegistrationError::Data(issues))
-        } else if let Err(_) = self.hash_password() {
-            Err(RegistrationError::PasswordHashing)
-        } else if let Ok(id) = insert_user(&self.username, &self.email, &self.password, pool).await
-        {
-            security::jwt_create(&mut UserAuthJwtClaims { id, exp: 0 }, 120)
-                .map_err(|_| RegistrationError::JwtCreation)
+        } else if let Ok(hashed_password) = self.hash_password() {
+            insert_user(
+                &self.username,
+                &self.email,
+                &hashed_password,
+                pool,
+            )
+            .await
+            .map_err(|_| RegistrationError::DatabaseInsertion)
         } else {
-            Err(RegistrationError::DatabaseInsertion)
+            Err(RegistrationError::PasswordHashing)
         }
     }
 }
@@ -164,6 +165,10 @@ async fn email_is_unique(email: &String, pool: &db::DbPool) -> Result<bool, sqlx
 struct UserAuthJwtClaims {
     id: i32,
     exp: usize,
+}
+
+pub fn auth_jwt_from_id(id: i32, expiration_sec: i64) -> Result<String, ()> {
+    security::jwt_create(&mut UserAuthJwtClaims { id, exp: 0 }, expiration_sec)
 }
 
 impl security::JwtClaims for UserAuthJwtClaims {
