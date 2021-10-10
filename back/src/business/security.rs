@@ -13,7 +13,7 @@ pub fn password_salt_and_hash(password: &String) -> Result<String, argon2::passw
 
     // Hash password to PHC string ($argon2id$v=19$...)
     Ok(argon2
-        .hash_password_simple(password.as_bytes(), &salt)?
+        .hash_password(password.as_bytes(), &salt)?
         .to_string())
 }
 

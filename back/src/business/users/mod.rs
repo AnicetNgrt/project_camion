@@ -3,8 +3,8 @@ use serde::{Deserialize};
 mod email;
 mod username;
 mod password;
-mod queries;
 mod jwt;
+mod queries;
 
 pub mod registration;
 

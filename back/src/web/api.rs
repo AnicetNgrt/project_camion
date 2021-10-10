@@ -3,7 +3,7 @@ use actix_web::{get, http::StatusCode, post, web, Error, HttpResponse, Scope};
 
 pub fn service(db_conn_pool: db::DbPool) -> Scope {
     web::scope("/api")
-        .data(ApiState::new(db_conn_pool))
+        .app_data(web::Data::new(ApiState::new(db_conn_pool)))
         .service(ping)
         .service(register)
 }
