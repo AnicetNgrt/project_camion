@@ -92,7 +92,16 @@ async fn user_detail(
                         "email": user.email
                     })
                 ),
-                Err()
+                Err(sqlx::Error::RowNotFound) => (
+                    StatusCode::NOT_FOUND,
+                    json!({})
+                ),
+                Err(error) => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({
+                        "error": error.to_string()
+                    })
+                )
             };
             HttpResponse::build(status)
                 .content_type("application/json")
