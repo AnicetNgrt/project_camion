@@ -9,6 +9,7 @@ pub fn service(db_conn_pool: db::DbPool) -> Scope {
         .service(ping)
         .service(register)
         .service(login)
+        .service(user_detail)
 }
 
 #[derive(Clone)]
@@ -90,24 +91,21 @@ async fn user_detail(
                     StatusCode::OK,
                     json!({
                         "email": user.email
-                    })
+                    }),
                 ),
-                Err(sqlx::Error::RowNotFound) => (
-                    StatusCode::NOT_FOUND,
-                    json!({})
-                ),
+                Err(sqlx::Error::RowNotFound) => (StatusCode::NOT_FOUND, json!({})),
                 Err(error) => (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     json!({
                         "error": error.to_string()
-                    })
-                )
+                    }),
+                ),
             };
             HttpResponse::build(status)
                 .content_type("application/json")
                 .body(body.to_string())
-        },
-        Err(auth_error) => auth_error.to_http_response()
+        }
+        Err(auth_error) => auth_error.to_http_response(),
     }
 }
 
@@ -117,47 +115,51 @@ enum AuthUserError {
     AuthorizationParsing,
     InvalidToken,
     UserNotAllowed,
-    RoleNotAllowed
+    RoleNotAllowed,
 }
 
 impl AuthUserError {
     pub fn to_http_response(&self) -> HttpResponse {
         HttpResponse::build(StatusCode::UNAUTHORIZED)
             .content_type("application/json")
-            .body(json!({
-                "error": self
-            }).to_string())
+            .body(json!({ "error": self }).to_string())
     }
 }
 
-fn request_auth_user_enforce_role(req: &HttpRequest, role: users::UserRole) -> Result<(), AuthUserError> {
+fn request_auth_user_enforce_role(
+    req: &HttpRequest,
+    role: users::UserRole,
+) -> Result<(), AuthUserError> {
     match request_auth_user(req) {
-        Ok((_, user_role)) => if role == user_role {
-            Ok(())
-        } else {
-            Err(AuthUserError::RoleNotAllowed)
+        Ok((_, user_role)) => {
+            if role == user_role {
+                Ok(())
+            } else {
+                Err(AuthUserError::RoleNotAllowed)
+            }
         }
-        Err(err) => Err(err)
+        Err(err) => Err(err),
     }
 }
 
 fn request_auth_user_enforce_id(req: &HttpRequest, id: i32) -> Result<(), AuthUserError> {
     match request_auth_user(req) {
-        Ok((user_id, _)) => if user_id == id {
-            Ok(())
-        } else {
-            Err(AuthUserError::UserNotAllowed)
+        Ok((user_id, _)) => {
+            if user_id == id {
+                Ok(())
+            } else {
+                Err(AuthUserError::UserNotAllowed)
+            }
         }
-        Err(err) => Err(err)
+        Err(err) => Err(err),
     }
 }
 
 fn request_auth_user(req: &HttpRequest) -> Result<(i32, users::UserRole), AuthUserError> {
     match req.headers().get("Authorization") {
         Some(authorization) => match authorization.to_str() {
-            Ok(token) => {
-                users::auth::claims_from_token(&token.to_owned()).map_err(|_| AuthUserError::InvalidToken)
-            }
+            Ok(token) => users::auth::claims_from_token(&token.to_owned())
+                .map_err(|_| AuthUserError::InvalidToken),
             Err(_) => Err(AuthUserError::AuthorizationParsing),
         },
         None => Err(AuthUserError::NoAuthorizationHeader),
