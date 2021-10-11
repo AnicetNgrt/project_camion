@@ -9,14 +9,18 @@ pub enum Issues {
     NotUnique,
 }
 
-pub async fn find_issues(email: &String, pool: &db::DbPool) -> Option<Vec<Issues>> {
-    let mut issues = vec![];
-
+pub fn string_is_email(email: &String) -> bool {
     let email_regex = Regex::new(
         r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})",
     )
     .unwrap();
-    if !email_regex.is_match(email) {
+    email_regex.is_match(email)
+}
+
+pub async fn find_issues(email: &String, pool: &db::DbPool) -> Option<Vec<Issues>> {
+    let mut issues = vec![];
+
+    if !string_is_email(email) {
         issues.push(Issues::Malformed);
     } else {
         match email_is_unique(email, pool).await {

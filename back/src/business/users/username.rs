@@ -1,9 +1,13 @@
 use serde::Serialize;
 use crate::business::db;
+use super::email::string_is_email;
 
 #[derive(Serialize)]
 pub enum Issues {
     CouldNotBeProcessed,
+    // If we allow users to put emails as usernames it makes the login
+    // process more hazardous
+    EmailLike,
     TooShort,
     TooLong,
     NotUnique,
@@ -11,6 +15,10 @@ pub enum Issues {
 
 pub async fn find_issues(username: &String, pool: &db::DbPool) -> Option<Vec<Issues>> {
     let mut issues = vec![];
+
+    if string_is_email(username) {
+        issues.push(Issues::EmailLike);
+    }
 
     if username.len() < 3 {
         issues.push(Issues::TooShort);

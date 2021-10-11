@@ -13,6 +13,11 @@ pub struct Data {
 #[derive(Serialize)]
 pub enum Error {
     Data(DataIssues),
+    Failure(Failures)
+}
+
+#[derive(Serialize)]
+pub enum Failures {
     PasswordHashing,
     DatabaseInsertion,
 }
@@ -32,12 +37,13 @@ impl Data {
                 &self.username,
                 &self.email,
                 &hashed_password,
+                UserRole::None,
                 pool,
             )
             .await
-            .map_err(|_| Error::DatabaseInsertion)
+            .map_err(|_| Error::Failure(Failures::DatabaseInsertion))
         } else {
-            Err(Error::PasswordHashing)
+            Err(Error::Failure(Failures::PasswordHashing))
         }
     }
 

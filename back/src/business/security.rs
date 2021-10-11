@@ -2,7 +2,7 @@ use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
 };
-use serde::Serialize;
+use serde::{Serialize, de::DeserializeOwned};
 use std::env;
 
 pub fn password_salt_and_hash(password: &String) -> Result<String, argon2::password_hash::Error> {
@@ -27,8 +27,29 @@ pub fn password_verify(password: &String, hash: &String) -> bool {
     }
 }
 
+pub fn fake_password_verify() {
+    password_verify(
+        &"iadAIDAG~~~ZI##123611#{{__".to_string(),
+        &"$argon2id$v=19$m=4096,t=3,p=1$KaoNKL8Ce5qieyRqDMbaXg$O2z+Xx2GUZOMmf2zFtyt7nu9xGm8nvfKSKS7bxTN9wg".to_string()
+    );
+}
+
 pub trait JwtClaims {
     fn set_expiration(&mut self, exp: usize);
+}
+
+pub fn jwt_decode<C: JwtClaims + DeserializeOwned>(jwt: &String) -> Result<C, ()> {
+    jsonwebtoken::decode::<C>(
+        jwt,
+        &jsonwebtoken::DecodingKey::from_secret(
+            env::var("JWT_SECRET_KEY")
+                .expect("JWT_SECRET_KEY not set")
+                .as_bytes()
+        ),
+        &jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::HS512)
+    )
+    .map(|decoded| decoded.claims)
+    .map_err(|_| ())
 }
 
 pub fn jwt_create<C: JwtClaims + Serialize>(
