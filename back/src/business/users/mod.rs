@@ -32,16 +32,6 @@ pub enum Error {
     DbFailure
 }
 
-macro_rules! find_by_x {
-    ($field:literal, $value:ident, $pool:ident) => {
-        queries::find_by_x!($field, $value, $pool)
-            .map_err(|error| match error {
-                sqlx::Error::RowNotFound => Error::NotFound,
-                _ => Error::DbFailure
-            })
-    };
-}
-
 pub async fn find_by_id(id: i32, pool: &db::DbPool) -> Result<User, Error> {
     find_by_x!("id", id, pool)
 }
@@ -53,3 +43,14 @@ pub async fn find_by_email(email: &String, pool: &db::DbPool) -> Result<User, Er
 pub async fn find_by_username(username: &String, pool: &db::DbPool) -> Result<User, Error> {
     find_by_x!("username", username, pool)
 }
+
+macro_rules! find_by_x {
+    ($field:literal, $value:ident, $pool:ident) => {
+        queries::find_by_x!($field, $value, $pool)
+            .map_err(|error| match error {
+                sqlx::Error::RowNotFound => Error::NotFound,
+                _ => Error::DbFailure
+            })
+    };
+}
+use find_by_x;
