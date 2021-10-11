@@ -93,11 +93,11 @@ async fn user_detail(
                         "email": user.email
                     }),
                 ),
-                Err(sqlx::Error::RowNotFound) => (StatusCode::NOT_FOUND, json!({})),
+                Err(users::Error::NotFound) => (StatusCode::NOT_FOUND, json!({})),
                 Err(error) => (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     json!({
-                        "error": error.to_string()
+                        "error": error
                     }),
                 ),
             };

@@ -1,4 +1,4 @@
-use super::{User, UserRole};
+use super::{UserRole};
 use crate::business::db;
 
 macro_rules! find_by_x {
@@ -15,18 +15,7 @@ macro_rules! find_by_x {
         .await
     };
 }
-
-pub async fn find_by_id(id: i32, pool: &db::DbPool) -> Result<User, sqlx::Error> {
-    find_by_x!("id", id, pool)
-}
-
-pub async fn find_by_email(email: &String, pool: &db::DbPool) -> Result<User, sqlx::Error> {
-    find_by_x!("email", email, pool)
-}
-
-pub async fn find_by_username(username: &String, pool: &db::DbPool) -> Result<User, sqlx::Error> {
-    find_by_x!("username", username, pool)
-}
+pub(crate) use find_by_x;
 
 pub async fn insert_returning_id(
     username: &String,

@@ -2,10 +2,9 @@ use crate::business::{db, security};
 use super::{
     auth,
     email::string_is_email,
-    queries::{
-        find_by_email,
-        find_by_username
-    }
+    find_by_username,
+    find_by_email,
+    Error as UserError
 };
 use serde::{Deserialize, Serialize};
 
@@ -56,10 +55,10 @@ impl Data {
                     }
                 }
             },
-            (false, Err(sqlx::Error::RowNotFound)) => {
+            (false, Err(UserError::NotFound)) => {
                 Err(Error::Denied(DeniedReasons::UnknownLogin))
             },
-            (true, Err(sqlx::Error::RowNotFound)) => {
+            (true, Err(UserError::NotFound)) => {
                 security::fake_password_verify(); // Avoiding guessing attacks on response time
                 Err(Error::Denied(DeniedReasons::InvalidCredentials))
             },
