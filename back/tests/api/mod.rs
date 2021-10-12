@@ -1,12 +1,12 @@
 use camion::{
-    business::db,
+    core::db,
     web::application::{Application, Config},
 };
 use dotenv::dotenv;
 use std::env;
 use uuid::Uuid;
 
-mod auth_tests;
+mod auth;
 
 pub struct TestApp {
     pub url: String,
@@ -19,7 +19,8 @@ pub async fn spawn_app() -> TestApp {
     let host = "127.0.0.1";
     let database_url_root = env::var("DATABASE_URL_ROOT").expect("DATABASE_URL_ROOT not set");
     let test_database_name = Uuid::new_v4().to_string();
-    let test_database_url = format!("{}/{}", &database_url_root, &test_database_name);
+    let test_database_url = format!("{}{}", &database_url_root, &test_database_name);
+    
     let config = Config {
         port: 0,
         host: host.to_owned(),

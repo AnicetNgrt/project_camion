@@ -1,5 +1,5 @@
 use serde::Serialize;
-use crate::business::db;
+use crate::core::db;
 use super::email::string_is_email;
 
 #[derive(Serialize)]

@@ -4,9 +4,9 @@ use super::db;
 mod email;
 mod username;
 mod password;
-mod queries;
+mod dl;
 
-pub mod auth;
+pub mod token;
 pub mod registration;
 pub mod login;
 
@@ -29,7 +29,7 @@ pub struct User {
 #[derive(Serialize)]
 pub enum Error {
     NotFound,
-    DbFailure
+    DataAccessLayerFailure
 }
 
 pub async fn find_by_id(id: i32, pool: &db::DbPool) -> Result<User, Error> {
@@ -46,10 +46,10 @@ pub async fn find_by_username(username: &String, pool: &db::DbPool) -> Result<Us
 
 macro_rules! find_by_x {
     ($field:literal, $value:ident, $pool:ident) => {
-        queries::find_by_x!($field, $value, $pool)
+        dl::find_by_x!($field, $value, $pool)
             .map_err(|error| match error {
                 sqlx::Error::RowNotFound => Error::NotFound,
-                _ => Error::DbFailure
+                _ => Error::DataAccessLayerFailure
             })
     };
 }

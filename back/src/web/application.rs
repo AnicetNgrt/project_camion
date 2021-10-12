@@ -1,7 +1,7 @@
 use actix_web::{App, HttpServer, dev::Server};
 use std::net::TcpListener;
 
-use crate::business::{db};
+use crate::core::{db};
 use crate::web::{api};
 
 pub struct Application {

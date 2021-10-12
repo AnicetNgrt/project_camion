@@ -1,1 +1,1 @@
-mod api_tests;
+mod api;

@@ -1,6 +1,6 @@
-use crate::business::{db, security};
+use crate::core::{db, security};
 use super::{
-    auth,
+    token,
     email::string_is_email,
     find_by_username,
     find_by_email,
@@ -45,7 +45,10 @@ impl Data {
         match (login_is_email, maybe_user) {
             (_, Ok(user)) => {
                 if security::password_verify(&self.password, &user.password) {
-                    auth::token_from_claims(user.id, user.role, 120)
+                    token::from_claims(token::Claims {
+                        id: user.id,
+                        role: user.role
+                    }, 120)
                         .map_err(|_| Error::Failure(Failure::TokenCreation))
                 } else {
                     if login_is_email {

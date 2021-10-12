@@ -1,2 +1,2 @@
-pub mod business;
+pub mod core;
 pub mod web;

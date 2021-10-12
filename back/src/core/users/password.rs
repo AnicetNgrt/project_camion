@@ -1,5 +1,5 @@
 use serde::Serialize;
-use crate::business::security;
+use crate::core::security;
 
 #[derive(Serialize)]
 pub enum Weakness {
