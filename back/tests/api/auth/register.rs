@@ -22,7 +22,7 @@ async fn try_register(
 }
 
 #[actix_rt::test]
-async fn registers_with_same_username_email_and_hashed_salted_password() {
+async fn registers_using_same_username_email_and_hashed_salted_password() {
     let app = spawn_app().await;
     let password = "superPass2021'-";
     let (status_code, body) = try_register(&app, "Anicet", "test@gmail.com", password).await;

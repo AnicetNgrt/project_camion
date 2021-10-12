@@ -40,7 +40,7 @@ async fn login(
     login_data: web::Json<users::login::Data>,
 ) -> HttpResponse {
     let (status, body) = match login_data.login(&&api_state.db_conn_pool).await {
-        Ok(jwt) => (StatusCode::OK, json!({ "jwt": jwt })),
+        Ok(jwt) => (StatusCode::OK, json!({ "token": jwt })),
         Err(users::login::Error::Denied(reason)) => {
             (StatusCode::UNAUTHORIZED, json!({ "reason": reason }))
         }
