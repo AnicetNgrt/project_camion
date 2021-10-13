@@ -1,4 +1,4 @@
-use crate::api::{auth::login::login, get, insert_test_user, spawn_app, TestApp};
+use crate::api::{TestApp, get, insert_test_user, spawn_app, users::create_user_and_login_with_username};
 use camion::core::users::UserRole;
 use reqwest::StatusCode;
 use serde_json::json;
@@ -6,26 +6,19 @@ use serde_json::json;
 async fn get_user_data_from_username(
     app: &TestApp,
     username: &str,
-    jwt: &str,
+    jwt: Option<&str>,
 ) -> (reqwest::StatusCode, serde_json::Value) {
+    let headers = match jwt {
+        Some(jwt) => vec![("Authorization", jwt)],
+        None => vec![]
+    };
+    
     get(
         app,
         &format!("/api/users/{}", username),
-        vec![("Authorization", jwt)],
+        headers,
     )
     .await
-}
-
-async fn create_user_and_login_with_username(
-    app: &TestApp,
-    username: &str,
-    email: &str,
-    password: &str,
-    role: &UserRole,
-) -> (i32, String) {
-    let id = insert_test_user(username, email, password, role, &app.db_conn_pool).await;
-    let (_, body) = login(app, username, password).await;
-    (id, body["token"].as_str().unwrap().to_owned())
 }
 
 #[actix_rt::test]
@@ -37,7 +30,7 @@ async fn can_get_own_public_and_private_data_from_username() {
     let (id, jwt) =
         create_user_and_login_with_username(&app, username, email, "superPassword", &role).await;
 
-    let (status_code, body) = get_user_data_from_username(&app, username, &jwt).await;
+    let (status_code, body) = get_user_data_from_username(&app, username, Some(&jwt)).await;
     assert_eq!(status_code, StatusCode::OK);
     assert_eq!(body["id"], json!(id));
     assert_eq!(body["role"], json!(role));
@@ -65,7 +58,7 @@ async fn can_get_anyones_public_and_private_data_from_username_as_admin() {
         let role = UserRole::None;
         let id = insert_test_user(username, email, "superPassword", &role, &app.db_conn_pool).await;
 
-        let (status_code, body) = get_user_data_from_username(&app, username, &jwt).await;
+        let (status_code, body) = get_user_data_from_username(&app, username, Some(&jwt)).await;
         assert_eq!(status_code, StatusCode::OK);
         assert_eq!(body["id"], json!(id));
         assert_eq!(body["role"], json!(role));
@@ -80,7 +73,7 @@ async fn can_get_anyones_public_and_private_data_from_username_as_admin() {
         let role = UserRole::Admin;
         let id = insert_test_user(username, email, "superPassword", &role, &app.db_conn_pool).await;
 
-        let (status_code, body) = get_user_data_from_username(&app, username, &jwt).await;
+        let (status_code, body) = get_user_data_from_username(&app, username, Some(&jwt)).await;
         assert_eq!(status_code, StatusCode::OK);
         assert_eq!(body["id"], json!(id));
         assert_eq!(body["role"], json!(role));
@@ -108,7 +101,7 @@ async fn can_only_get_someone_else_public_data_by_default_from_username() {
     let role = UserRole::None;
     let id = insert_test_user(username, email, "superPassword", &role, &app.db_conn_pool).await;
 
-    let (status_code, body) = get_user_data_from_username(&app, username, &jwt).await;
+    let (status_code, body) = get_user_data_from_username(&app, username, Some(&jwt)).await;
     assert_eq!(status_code, StatusCode::OK);
     assert_eq!(body["id"], json!(id));
     assert_eq!(body["role"], json!(role));
@@ -118,7 +111,7 @@ async fn can_only_get_someone_else_public_data_by_default_from_username() {
 }
 
 #[actix_rt::test]
-async fn can_only_get_someone_public_data_by_default_from_username_when_anonymous() {
+async fn can_only_get_someone_public_data_by_default_from_username_as_anonymous() {
     let app = spawn_app().await;
 
     let username = "Jean";
@@ -126,7 +119,7 @@ async fn can_only_get_someone_public_data_by_default_from_username_when_anonymou
     let role = UserRole::None;
     let id = insert_test_user(username, email, "superPassword", &role, &app.db_conn_pool).await;
 
-    let (status_code, body) = get_user_data_from_username(&app, username, "").await;
+    let (status_code, body) = get_user_data_from_username(&app, username, None).await;
     assert_eq!(status_code, StatusCode::OK);
     assert_eq!(body["id"], json!(id));
     assert_eq!(body["role"], json!(role));

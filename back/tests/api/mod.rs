@@ -113,6 +113,7 @@ pub async fn post_json(
 
     let status = res.status();
     let body = res.text().await.unwrap();
+    println!("{} : {}", status, body);
     (status, serde_json::from_str(&body).unwrap())
 }
 

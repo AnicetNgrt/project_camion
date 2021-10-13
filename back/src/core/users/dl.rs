@@ -1,4 +1,4 @@
-use super::{UserRole};
+use super::{User, UserRole};
 use crate::core::db;
 
 macro_rules! find_by_x {
@@ -16,6 +16,22 @@ macro_rules! find_by_x {
     };
 }
 pub(crate) use find_by_x;
+
+pub async fn search_by_username(
+    query: &String,
+    pool: &db::DbPool,
+) -> Result<Vec<User>, sqlx::Error> {
+    sqlx::query_as!(
+        User,
+        r#"
+        SELECT id, username, email, password, role as "role: UserRole"
+        FROM users WHERE username ~* $1
+        "#,
+        query
+    )
+    .fetch_all(pool)
+    .await
+}
 
 pub async fn insert_returning_id(
     username: &String,
