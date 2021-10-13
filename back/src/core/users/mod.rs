@@ -1,4 +1,6 @@
 use serde::{Serialize, Deserialize};
+use self::token::Claims;
+
 use super::db;
 
 mod email;
@@ -24,6 +26,26 @@ pub struct User {
     pub role: UserRole,
     pub email: String,
     pub password: String
+}
+
+impl User {
+    pub fn to_json_as_seen_from(&self, claims: Option<Claims>) -> serde_json::Value {
+        if let Some(Claims{ id, role }) = claims {
+            if id == self.id || role == UserRole::Admin {
+                return serde_json::json!({
+                    "id": self.id,
+                    "username": self.username,
+                    "role": self.role,
+                    "email": self.email
+                });
+            }
+        }
+        serde_json::json!({
+            "id": self.id,
+            "username": self.username,
+            "role": self.role
+        })
+    }
 }
 
 #[derive(Serialize)]

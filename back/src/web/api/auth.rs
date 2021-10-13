@@ -43,7 +43,7 @@ async fn login(
         Ok(jwt) => (StatusCode::OK, json!({ "token": jwt })),
         Err(users::login::Error::Denied(reason)) => {
             (StatusCode::UNAUTHORIZED, json!({ "reason": reason }))
-        }
+        },
         Err(users::login::Error::Failure(failure)) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             json!({ "error": failure }),

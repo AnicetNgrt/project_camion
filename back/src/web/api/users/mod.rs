@@ -1,35 +1,25 @@
-use crate::core::{users};
+use crate::core::users::{self};
 use actix_web::{get, http::StatusCode, web, HttpRequest, HttpResponse};
 use serde_json::json;
 
-use super::{ApiState};
+use super::ApiState;
 
-pub mod request_auth;
+pub mod utils_auth;
 
-#[get("/user/{id}")]
-async fn user_detail(
+#[get("/users/{username}")]
+async fn user_from_username(
     req: HttpRequest,
     api_state: web::Data<ApiState>,
-    path: web::Path<(i32,)>,
+    path: web::Path<(String,)>,
 ) -> HttpResponse {
-    if let Err(auth_error) = request_auth::enforce_id(&req, path.0) {
-        return auth_error.to_http_response()
-    }
+    let claims = utils_auth::auth_user(&req);
+    let finding = users::find_by_username(&path.0, &&api_state.db_conn_pool).await;
     
-    let (status, body) = match users::find_by_id(path.0, &&api_state.db_conn_pool).await {
-        Ok(user) => (
-            StatusCode::OK,
-            json!({
-                "email": user.email
-            }),
-        ),
-        Err(users::Error::NotFound) => (StatusCode::NOT_FOUND, json!({})),
-        Err(error) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            json!({
-                "error": error
-            }),
-        ),
+    let (status, body) = match (claims, finding) {
+        (Ok(claims), Ok(user)) => (StatusCode::OK, user.to_json_as_seen_from(Some(claims))),
+        (Err(auth_error), Ok(user)) => (StatusCode::OK, user.to_json_as_seen_from(None)),
+        (_, Err(users::Error::NotFound)) => (StatusCode::NOT_FOUND, json!({})),
+        (_, Err(error)) => (StatusCode::INTERNAL_SERVER_ERROR, json!({ "error": error })),
     };
     HttpResponse::build(status)
         .content_type("application/json")

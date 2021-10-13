@@ -11,7 +11,7 @@ pub fn service(db_conn_pool: db::DbPool) -> Scope {
         .service(misc::ping)
         .service(auth::register)
         .service(auth::login)
-        .service(users::user_detail)
+        .service(users::user_from_username)
 }
 
 #[derive(Clone)]

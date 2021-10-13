@@ -1,9 +1,10 @@
-use crate::api::{post_json, spawn_app, TestApp};
+use camion::core::users::UserRole;
+use crate::api::{post_json, spawn_app, insert_test_user, TestApp};
 use serde_json::json;
 
 use camion::core::security::{password_verify, password_salt_and_hash};
 
-async fn try_register(
+async fn register(
     app: &TestApp,
     username: &str,
     email: &str,
@@ -17,6 +18,7 @@ async fn try_register(
             "email": email,
             "password": password
         }),
+        vec![]
     )
     .await
 }
@@ -25,7 +27,7 @@ async fn try_register(
 async fn registers_using_same_username_email_and_hashed_salted_password() {
     let app = spawn_app().await;
     let password = "superPass2021'-";
-    let (status_code, body) = try_register(&app, "Anicet", "test@gmail.com", password).await;
+    let (status_code, body) = register(&app, "Anicet", "test@gmail.com", password).await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     assert_eq!(body["issues"]["email"], serde_json::Value::Null);
     
@@ -48,27 +50,27 @@ async fn registers_using_same_username_email_and_hashed_salted_password() {
 #[actix_rt::test]
 async fn email_find_no_issues_valid() {
     let app = spawn_app().await;
-    let (status_code, body) = try_register(&app, "", "abc_def@mail.cc", "").await;
+    let (status_code, body) = register(&app, "", "abc_def@mail.cc", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     assert_eq!(body["issues"]["email"], serde_json::Value::Null);
 
-    let (status_code, body) = try_register(&app, "", "abc@mail-archive.com", "").await;
+    let (status_code, body) = register(&app, "", "abc@mail-archive.com", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     assert_eq!(body["issues"]["email"], serde_json::Value::Null);
 
-    let (status_code, body) = try_register(&app, "", "abc.def@mail.org", "").await;
+    let (status_code, body) = register(&app, "", "abc.def@mail.org", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     assert_eq!(body["issues"]["email"], serde_json::Value::Null);
 
-    let (status_code, body) = try_register(&app, "", "abc-d@mail.com", "").await;
+    let (status_code, body) = register(&app, "", "abc-d@mail.com", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     assert_eq!(body["issues"]["email"], serde_json::Value::Null);
 
-    let (status_code, body) = try_register(&app, "", "abc-@mail.com", "").await;
+    let (status_code, body) = register(&app, "", "abc-@mail.com", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     assert_eq!(body["issues"]["email"], serde_json::Value::Null);
 
-    let (status_code, body) = try_register(&app, "", "abc#def@mail.com", "").await;
+    let (status_code, body) = register(&app, "", "abc#def@mail.com", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     assert_eq!(body["issues"]["email"], serde_json::Value::Null);
 }
@@ -76,22 +78,22 @@ async fn email_find_no_issues_valid() {
 #[actix_rt::test]
 async fn email_reject_malformed() {
     let app = spawn_app().await;
-    let (status_code, body) = try_register(&app, "", "hello", "").await;
+    let (status_code, body) = register(&app, "", "hello", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     let issues = body["issues"]["email"].as_array().unwrap();
     assert!(issues.iter().any(|v| *v == json!("Malformed")));
 
-    let (status_code, body) = try_register(&app, "", "HELLO", "").await;
+    let (status_code, body) = register(&app, "", "HELLO", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     let issues = body["issues"]["email"].as_array().unwrap();
     assert!(issues.iter().any(|v| *v == json!("Malformed")));
 
-    let (status_code, body) = try_register(&app, "", "abc@", "").await;
+    let (status_code, body) = register(&app, "", "abc@", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     let issues = body["issues"]["email"].as_array().unwrap();
     assert!(issues.iter().any(|v| *v == json!("Malformed")));
 
-    let (status_code, body) = try_register(&app, "", "abc@mail..com", "").await;
+    let (status_code, body) = register(&app, "", "abc@mail..com", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     let issues = body["issues"]["email"].as_array().unwrap();
     assert!(issues.iter().any(|v| *v == json!("Malformed")));
@@ -113,7 +115,7 @@ async fn email_reject_not_unique() {
     .await
     .unwrap();
 
-    let (status_code, body) = try_register(&app, "", "anicet@gmail.com", "").await;
+    let (status_code, body) = register(&app, "", "anicet@gmail.com", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     let issues = body["issues"]["email"].as_array().unwrap();
     assert!(issues.iter().any(|v| *v == json!("NotUnique")));
@@ -122,7 +124,7 @@ async fn email_reject_not_unique() {
 #[actix_rt::test]
 async fn username_find_no_issues_valid() {
     let app = spawn_app().await;
-    let (status_code, body) = try_register(&app, "Félicie", "", "").await;
+    let (status_code, body) = register(&app, "Félicie", "", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     assert_eq!(body["issues"]["username"], serde_json::Value::Null);
 }
@@ -130,7 +132,7 @@ async fn username_find_no_issues_valid() {
 #[actix_rt::test]
 async fn username_reject_too_short() {
     let app = spawn_app().await;
-    let (status_code, body) = try_register(&app, "An", "", "").await;
+    let (status_code, body) = register(&app, "An", "", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     let issues = body["issues"]["username"].as_array().unwrap();
     assert!(issues.iter().any(|v| *v == json!("TooShort")));
@@ -140,7 +142,7 @@ async fn username_reject_too_short() {
 async fn username_reject_too_long() {
     let app = spawn_app().await;
     let (status_code, body) =
-    try_register(&app, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "", "").await;
+    register(&app, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     let issues = body["issues"]["username"].as_array().unwrap();
     assert!(issues.iter().any(|v| *v == json!("TooLong")));
@@ -149,7 +151,7 @@ async fn username_reject_too_long() {
 #[actix_rt::test]
 async fn username_reject_email_like() {
     let app = spawn_app().await;
-    let (status_code, body) = try_register(&app, "truc.machin@machin-bidule.fr", "", "").await;
+    let (status_code, body) = register(&app, "truc.machin@machin-bidule.fr", "", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     let issues = body["issues"]["username"].as_array().unwrap();
     assert!(issues.iter().any(|v| *v == json!("EmailLike")));
@@ -158,20 +160,9 @@ async fn username_reject_email_like() {
 #[actix_rt::test]
 async fn username_reject_not_unique() {
     let app = spawn_app().await;
-    sqlx::query!(
-        r#"
-        INSERT INTO users ( username, email, password, role )
-        VALUES ( $1, $2, $3, 'none' )
-    "#,
-        "Anicet",
-        "test",
-        "test"
-    )
-    .execute(&app.db_conn_pool)
-    .await
-    .unwrap();
-
-    let (status_code, body) = try_register(&app, "Anicet", "", "").await;
+    let username = "Anicet";
+    insert_test_user(username, "", "", &UserRole::None, &app.db_conn_pool).await;
+    let (status_code, body) = register(&app, username, "", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     let issues = body["issues"]["username"].as_array().unwrap();
     assert!(issues.iter().any(|v| *v == json!("NotUnique")));
@@ -180,7 +171,7 @@ async fn username_reject_not_unique() {
 #[actix_rt::test]
 async fn password_find_no_issues_valid() {
     let app = spawn_app().await;
-    let (status_code, body) = try_register(&app, "", "", "strongPassword10#[").await;
+    let (status_code, body) = register(&app, "", "", "strongPassword10#[").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     assert_eq!(body["issues"]["password"], serde_json::Value::Null);
 }
@@ -188,7 +179,7 @@ async fn password_find_no_issues_valid() {
 #[actix_rt::test]
 async fn password_reject_only_lowercase_alphabetic() {
     let app = spawn_app().await;
-    let (status_code, body) = try_register(&app, "", "", "blabasecret").await;
+    let (status_code, body) = register(&app, "", "", "blabasecret").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     let issues = body["issues"]["password"].as_array().unwrap();
     assert!(issues.iter().any(|v| *v == json!("NoNumeric")));
@@ -199,7 +190,7 @@ async fn password_reject_only_lowercase_alphabetic() {
 #[actix_rt::test]
 async fn password_reject_only_uppercase_alphabetic() {
     let app = spawn_app().await;
-    let (status_code, body) = try_register(&app, "", "", "BLABLASECRET").await;
+    let (status_code, body) = register(&app, "", "", "BLABLASECRET").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     let issues = body["issues"]["password"].as_array().unwrap();
     assert!(issues.iter().any(|v| *v == json!("NoNumeric")));
@@ -210,7 +201,7 @@ async fn password_reject_only_uppercase_alphabetic() {
 #[actix_rt::test]
 async fn password_reject_only_numeric_or_short() {
     let app = spawn_app().await;
-    let (status_code, body) = try_register(&app, "", "", "1917").await;
+    let (status_code, body) = register(&app, "", "", "1917").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     let issues = body["issues"]["password"].as_array().unwrap();
     assert!(issues.iter().any(|v| *v == json!("NoAlphabetic")));
@@ -223,7 +214,7 @@ async fn password_reject_only_numeric_or_short() {
 #[actix_rt::test]
 async fn password_reject_only_special_chars() {
     let app = spawn_app().await;
-    let (status_code, body) = try_register(&app, "", "", "~#~~{{{~]]{&&#").await;
+    let (status_code, body) = register(&app, "", "", "~#~~{{{~]]{&&#").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     let issues = body["issues"]["password"].as_array().unwrap();
     assert!(issues.iter().any(|v| *v == json!("NoAlphabetic")));

@@ -1,2 +1,2 @@
 mod register;
-mod login;
+pub(crate) mod login;
