@@ -1,5 +1,5 @@
 use camion::{
-    core::{db, security::password_salt_and_hash, users::UserRole},
+    core::{db, security::password_salt_and_hash, users::Role},
     web::application::{Application, Config},
 };
 use dotenv::dotenv;
@@ -132,7 +132,7 @@ pub async fn insert_test_user(
     username: &str,
     email: &str,
     password: &str,
-    role: &UserRole,
+    role: &Role,
     pool: &db::DbPool,
 ) -> i32 {
     let hashed_salted_password = password_salt_and_hash(&password.to_string()).unwrap();
@@ -146,7 +146,7 @@ pub async fn insert_test_user(
         username,
         email,
         hashed_salted_password,
-        role as _
+        role.clone() as i32
     )
     .fetch_one(pool)
     .await

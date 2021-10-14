@@ -1,5 +1,5 @@
 use crate::api::{TestApp, get, insert_test_user, spawn_app, users::create_user_and_login_with_username};
-use camion::core::users::UserRole;
+use camion::core::users::Role;
 use reqwest::StatusCode;
 use serde_json::json;
 
@@ -26,7 +26,7 @@ async fn can_get_own_public_and_private_data_from_username() {
     let app = spawn_app().await;
     let username = "Anicet";
     let email = "test@test.fr";
-    let role = UserRole::None;
+    let role = Role::None;
     let (id, jwt) =
         create_user_and_login_with_username(&app, username, email, "superPassword", &role).await;
 
@@ -48,14 +48,14 @@ async fn can_get_anyones_public_and_private_data_from_username_as_admin() {
         "Félicie",
         "felicie@test.fr",
         "superPassword",
-        &UserRole::Admin,
+        &Role::Admin,
     )
     .await;
 
     {
         let username = "Jean";
         let email = "jean@test.fr";
-        let role = UserRole::None;
+        let role = Role::None;
         let id = insert_test_user(username, email, "superPassword", &role, &app.db_conn_pool).await;
 
         let (status_code, body) = get_user_data_from_username(&app, username, Some(&jwt)).await;
@@ -70,7 +70,7 @@ async fn can_get_anyones_public_and_private_data_from_username_as_admin() {
     {
         let username = "Anicet";
         let email = "anicet@test.fr";
-        let role = UserRole::Admin;
+        let role = Role::Admin;
         let id = insert_test_user(username, email, "superPassword", &role, &app.db_conn_pool).await;
 
         let (status_code, body) = get_user_data_from_username(&app, username, Some(&jwt)).await;
@@ -92,13 +92,13 @@ async fn can_only_get_someone_else_public_data_by_default_from_username() {
         "Anicet",
         "anicet@test.fr",
         "superPassword",
-        &UserRole::None,
+        &Role::None,
     )
     .await;
 
     let username = "Jean";
     let email = "jean@test.fr";
-    let role = UserRole::None;
+    let role = Role::None;
     let id = insert_test_user(username, email, "superPassword", &role, &app.db_conn_pool).await;
 
     let (status_code, body) = get_user_data_from_username(&app, username, Some(&jwt)).await;
@@ -116,7 +116,7 @@ async fn can_only_get_someone_public_data_by_default_from_username_as_anonymous(
 
     let username = "Jean";
     let email = "jean@test.fr";
-    let role = UserRole::None;
+    let role = Role::None;
     let id = insert_test_user(username, email, "superPassword", &role, &app.db_conn_pool).await;
 
     let (status_code, body) = get_user_data_from_username(&app, username, None).await;

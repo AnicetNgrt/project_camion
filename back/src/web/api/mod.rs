@@ -13,6 +13,7 @@ pub fn service(db_conn_pool: db::DbPool) -> Scope {
         .service(auth::login)
         .service(users::get_user_data)
         .service(users::search_users)
+        .service(users::change_user_role)
 }
 
 #[derive(Clone)]

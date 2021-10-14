@@ -1,16 +1,16 @@
 use serde::{Serialize, Deserialize};
 use crate::core::security;
-use super::UserRole;
+use super::Role;
 
 pub struct Claims {
     pub id: i32,
-    pub role: UserRole
+    pub role: Role
 }
 
 #[derive(Serialize, Deserialize)]
 struct JwtClaims {
     id: i32,
-    role: UserRole,
+    role: Role,
     exp: usize,
 }
 

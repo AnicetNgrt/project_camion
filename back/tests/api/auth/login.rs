@@ -1,4 +1,4 @@
-use camion::core::users::UserRole;
+use camion::core::users::Role;
 use crate::api::{post_json, spawn_app, insert_test_user, TestApp};
 use serde_json::json;
 
@@ -25,7 +25,7 @@ async fn success_with_same_username_and_password() {
     let username = "Anicet";
     let email = "";
     let password = "secret_password";
-    insert_test_user(username, email, password, &UserRole::None, &app.db_conn_pool).await;
+    insert_test_user(username, email, password, &Role::None, &app.db_conn_pool).await;
 
     let (status_code, body) = login(&app, username, password).await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
@@ -38,7 +38,7 @@ async fn success_with_same_email_and_password() {
     let username = "";
     let email = "test@test.fr";
     let password = "secret_password";
-    insert_test_user(username, email, password, &UserRole::None, &app.db_conn_pool).await;
+    insert_test_user(username, email, password, &Role::None, &app.db_conn_pool).await;
 
     let (status_code, body) = login(&app, email, password).await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
@@ -57,7 +57,7 @@ async fn tells_when_username_unknown() {
 async fn tells_when_username_known_and_password_wrong() {
     let app = spawn_app().await;
     let username = "Anicet";
-    insert_test_user(username, "", "superPassword", &UserRole::None, &app.db_conn_pool).await;
+    insert_test_user(username, "", "superPassword", &Role::None, &app.db_conn_pool).await;
 
     let (status_code, body) = login(&app, username, "superWrongPassword").await;
     assert_eq!(status_code, reqwest::StatusCode::UNAUTHORIZED);
@@ -69,7 +69,7 @@ async fn is_ambiguous_when_email_unknown_or_email_known_and_password_wrong() {
     let app = spawn_app().await;
     let email = "test@test.fr";
     let password = "superPassword";
-    insert_test_user("", email, password, &UserRole::None, &app.db_conn_pool).await;
+    insert_test_user("", email, password, &Role::None, &app.db_conn_pool).await;
 
     let (status_code, body) = login(&app, email, "superWrongPassword").await;
     assert_eq!(status_code, reqwest::StatusCode::UNAUTHORIZED);

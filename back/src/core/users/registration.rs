@@ -38,7 +38,7 @@ impl Data {
                 &self.username,
                 &self.email,
                 &hashed_password,
-                UserRole::None,
+                Role::None,
                 pool,
             )
             .await

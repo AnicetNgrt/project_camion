@@ -7,23 +7,17 @@ mod dl;
 mod email;
 mod password;
 mod username;
+mod role;
 
 pub mod login;
 pub mod registration;
 pub mod token;
-
-#[derive(sqlx::Type, Serialize, Deserialize, PartialEq)]
-#[sqlx(type_name = "user_role", rename_all = "lowercase")]
-pub enum UserRole {
-    Admin,
-    Author,
-    None,
-}
+pub use role::*;
 
 pub struct User {
     pub id: i32,
     pub username: String,
-    pub role: UserRole,
+    pub role: Role,
     pub email: String,
     pub password: String,
 }
@@ -35,6 +29,14 @@ pub enum Error {
 }
 
 impl User {
+    pub async fn set_role(&mut self, new_role: Role, pool: &db::DbPool) -> Result<(), Error> {
+        self.role = new_role;
+        dl::update_role_returning_id(self.id, new_role, pool)
+            .await
+            .map(|_| ())
+            .map_err(|_| Error::DataAccessLayerFailure)
+    }
+
     pub fn is_searchable_by(&self, claims: &Option<Claims>) -> bool {
         let is_searcher = match claims {
             Some(Claims { id, .. }) => *id == self.id,
@@ -42,15 +44,15 @@ impl User {
         };
         match claims {
             Some(Claims { role, .. }) => {
-                self.role != UserRole::None || *role == UserRole::Admin || is_searcher
+                self.role != Role::None || *role == Role::Admin || is_searcher
             }
-            None => self.role != UserRole::None,
+            None => self.role != Role::None,
         }
     }
 
     pub fn to_json_as_seen_from(&self, claims: &Option<Claims>) -> serde_json::Value {
         if let Some(Claims { id, role }) = claims {
-            if *id == self.id || *role == UserRole::Admin {
+            if *id == self.id || *role == Role::Admin {
                 return serde_json::json!({
                     "id": self.id,
                     "username": self.username,
@@ -91,7 +93,10 @@ pub async fn search_by_username_to_json_as_seen_from(
             .filter(|user| user.is_searchable_by(claims))
             .map(|user| user.to_json_as_seen_from(claims))
             .collect()),
-        Err(_) => Err(Error::DataAccessLayerFailure),
+        Err(error) => {
+            println!("{}", error);
+            Err(Error::DataAccessLayerFailure)
+        },
     }
 }
 

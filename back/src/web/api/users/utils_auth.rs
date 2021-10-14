@@ -1,5 +1,5 @@
 use crate::core::{
-    users::{token, UserRole},
+    users::{token, Role},
 };
 use actix_web::{http::StatusCode, HttpRequest, HttpResponse};
 use serde::Serialize;
@@ -24,7 +24,7 @@ impl Error {
 
 pub fn enforce_role(
     req: &HttpRequest,
-    role: UserRole,
+    role: Role,
 ) -> Result<(), Error> {
     match auth_user(req) {
         Ok(token::Claims{ role: user_role, ..}) => {

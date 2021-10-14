@@ -1,4 +1,4 @@
-use camion::core::users::UserRole;
+use camion::core::users::Role;
 use crate::api::{post_json, spawn_app, insert_test_user, TestApp};
 use serde_json::json;
 
@@ -105,7 +105,7 @@ async fn email_reject_not_unique() {
     sqlx::query!(
         r#"
         INSERT INTO users ( username, email, password, role )
-        VALUES ( $1, $2, $3, 'none' )
+        VALUES ( $1, $2, $3, 2 )
     "#,
         "test",
         "anicet@gmail.com",
@@ -161,7 +161,7 @@ async fn username_reject_email_like() {
 async fn username_reject_not_unique() {
     let app = spawn_app().await;
     let username = "Anicet";
-    insert_test_user(username, "", "", &UserRole::None, &app.db_conn_pool).await;
+    insert_test_user(username, "", "", &Role::None, &app.db_conn_pool).await;
     let (status_code, body) = register(&app, username, "", "").await;
     assert_eq!(status_code, reqwest::StatusCode::OK);
     let issues = body["issues"]["username"].as_array().unwrap();

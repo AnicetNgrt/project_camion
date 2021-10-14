@@ -1,7 +1,9 @@
-use crate::core::users::{self};
+use crate::core::users::{self, Role};
 use actix_web::{get, http::StatusCode, post, web, HttpRequest, HttpResponse};
 use serde::Deserialize;
 use serde_json::json;
+
+use self::utils_auth::enforce_role;
 
 use super::ApiState;
 
@@ -56,10 +58,39 @@ async fn get_user_data(
         Err(error) => return error.to_http_response(),
     };
 
-    let finding = users::find_by_username(&path.0, &&api_state.db_conn_pool).await;
-
-    let (status, body) = match finding {
+    let (status, body) = match users::find_by_username(&path.0, &&api_state.db_conn_pool).await {
         Ok(user) => (StatusCode::OK, user.to_json_as_seen_from(&claims)),
+        Err(users::Error::NotFound) => (StatusCode::NOT_FOUND, json!({})),
+        Err(error) => (StatusCode::INTERNAL_SERVER_ERROR, json!({ "error": error })),
+    };
+
+    HttpResponse::build(status)
+        .content_type("application/json")
+        .body(body.to_string())
+}
+
+#[derive(Deserialize)]
+struct ChangeRoleBody {
+    pub new_role: Role,
+}
+
+#[post("/users/{username}/role")]
+async fn change_user_role(
+    req: HttpRequest,
+    api_state: web::Data<ApiState>,
+    body: web::Json<ChangeRoleBody>,
+    path: web::Path<(String,)>,
+) -> HttpResponse {
+    if let Err(error) = enforce_role(&req, users::Role::Admin) {
+        return error.to_http_response();
+    }
+    let (status, body) = match users::find_by_username(&path.0, &&api_state.db_conn_pool).await {
+        Ok(mut user) => {
+            match user.set_role(body.new_role, &&api_state.db_conn_pool).await {
+                Ok(_) => (StatusCode::OK, json!({})),
+                Err(error) => (StatusCode::INTERNAL_SERVER_ERROR, json!({ "error": error })) 
+            }
+        },
         Err(users::Error::NotFound) => (StatusCode::NOT_FOUND, json!({})),
         Err(error) => (StatusCode::INTERNAL_SERVER_ERROR, json!({ "error": error })),
     };

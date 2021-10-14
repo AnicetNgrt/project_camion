@@ -1,7 +1,7 @@
 use crate::api::{
     insert_test_user, post_json, spawn_app, users::create_user_and_login_with_username, TestApp,
 };
-use camion::core::users::UserRole;
+use camion::core::users::Role;
 use reqwest::StatusCode;
 use serde_json::json;
 
@@ -31,11 +31,11 @@ fn contains_username(results: &Vec<serde_json::Value>, username: &str) -> bool {
 
 async fn insert_test_users(app: &TestApp) {
     let users = vec![
-        ("TrucMachin", "a1@test.fr", "", &UserRole::Author),
-        ("BiduleChouette", "a2@test.fr", "", &UserRole::Author),
-        ("MachtruChou", "a3@test.fr", "", &UserRole::Admin),
-        ("biducHin", "a4@test.fr", "", &UserRole::None),
-        ("chouetteTruc", "a5@test.fr", "", &UserRole::None),
+        ("TrucMachin", "a1@test.fr", "", &Role::Author),
+        ("BiduleChouette", "a2@test.fr", "", &Role::Author),
+        ("MachtruChou", "a3@test.fr", "", &Role::Admin),
+        ("biducHin", "a4@test.fr", "", &Role::None),
+        ("chouetteTruc", "a5@test.fr", "", &Role::None),
     ];
 
     for (username, email, password, role) in users.iter() {
@@ -47,7 +47,7 @@ async fn insert_test_users(app: &TestApp) {
 async fn returns_all_users_with_query_in_username_as_admin() {
     let app = spawn_app().await;
     let (_, jwt) =
-        create_user_and_login_with_username(&app, "admin", "a0@test.fr", "pass", &UserRole::Admin)
+        create_user_and_login_with_username(&app, "admin", "a0@test.fr", "pass", &Role::Admin)
             .await;
     insert_test_users(&app).await;
 
@@ -65,7 +65,7 @@ async fn returns_all_users_with_query_in_username_as_admin() {
 async fn returns_authors_and_admins_only_with_query_in_username_as_author() {
     let app = spawn_app().await;
     let (_, jwt) =
-        create_user_and_login_with_username(&app, "author", "a0@test.fr", "pass", &UserRole::Author)
+        create_user_and_login_with_username(&app, "author", "a0@test.fr", "pass", &Role::Author)
             .await;
     insert_test_users(&app).await;
 
@@ -82,7 +82,7 @@ async fn returns_authors_and_admins_only_with_query_in_username_as_author() {
 async fn returns_authors_and_admins_only_with_query_in_username_as_none() {
     let app = spawn_app().await;
     let (_, jwt) =
-        create_user_and_login_with_username(&app, "person", "a0@test.fr", "pass", &UserRole::None)
+        create_user_and_login_with_username(&app, "person", "a0@test.fr", "pass", &Role::None)
             .await;
     insert_test_users(&app).await;
 
