@@ -4,6 +4,7 @@ use actix_web::{web, Scope};
 mod auth;
 mod users;
 mod misc;
+mod jokes;
 
 pub fn service(db_conn_pool: db::DbPool) -> Scope {
     web::scope("/api")

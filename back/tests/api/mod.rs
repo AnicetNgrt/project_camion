@@ -13,6 +13,7 @@ use uuid::Uuid;
 
 mod auth;
 mod users;
+mod jokes;
 
 pub struct TestApp {
     pub url: String,

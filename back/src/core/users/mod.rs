@@ -1,5 +1,5 @@
 use self::token::Claims;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 
 use super::db;
 
@@ -22,7 +22,7 @@ pub struct User {
     pub password: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub enum Error {
     NotFound,
     DataAccessLayerFailure,

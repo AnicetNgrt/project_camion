@@ -6,7 +6,7 @@ pub mod get_user_data;
 pub mod search_users;
 pub mod change_user_role;
 
-async fn create_user_and_login_with_username(
+pub async fn create_user_and_login_with_username(
     app: &TestApp,
     username: &str,
     email: &str,
