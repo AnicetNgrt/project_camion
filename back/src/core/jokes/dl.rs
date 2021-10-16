@@ -19,7 +19,7 @@ impl JokePostgres {
             id: self.id,
             title: self.title,
             lines,
-            author,
+            author_username: author.username,
             created_at: self.created_at,
             modified_at: self.modified_at,
         }

@@ -14,6 +14,7 @@ pub mod registration;
 pub mod token;
 pub use role::*;
 
+#[derive(Serialize)]
 pub struct User {
     pub id: i32,
     pub username: String,

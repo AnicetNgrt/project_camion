@@ -15,6 +15,7 @@ pub fn service(db_conn_pool: db::DbPool) -> Scope {
         .service(users::get_user_data)
         .service(users::search_users)
         .service(users::change_user_role)
+        .service(jokes::create_joke)
 }
 
 #[derive(Clone)]

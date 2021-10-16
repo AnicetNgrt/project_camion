@@ -16,13 +16,27 @@ async fn post_create_joke_request(
     };
     post_json(
         app,
-        &format!("/api/jokes"),
+        &format!("/api/jokes/create"),
         json!({
             "joke": joke_json
         }),
         headers,
     )
     .await
+}
+
+fn valid_joke() -> serde_json::Value {
+    json!({
+        "title": "Test",
+        "lines": [
+            { "speaker": "Author1", "content": "blabl abalab la balabba abalba" },
+            { "speaker": "Ahor3", "content": "blabl abaladzadazhalabba abalba" },
+            { "speaker": "Aut862or2", "content": "blabl ab abalba" },
+            { "speaker": "Author8", "content": "blabl abalab laaza87131 abalba" },
+            { "speaker": "Auth", "content": "blabl alabba abalba" },
+            { "speaker": "Author1", "content": "blabl abalab la^aa$$ba abalba" }
+        ]
+    })
 }
 
 #[actix_rt::test]
@@ -33,7 +47,7 @@ async fn admins_can_create_jokes() {
         create_user_and_login_with_username(&app, "admin", "a0@test.fr", "pass", &Role::Admin)
             .await;
 
-    let (status_code, _) = post_create_joke_request(&app, json!({}), Some(&jwt)).await;
+    let (status_code, _) = post_create_joke_request(&app, valid_joke(), Some(&jwt)).await;
     assert_eq!(status_code, StatusCode::OK);
 }
 
@@ -45,7 +59,7 @@ async fn authors_can_create_jokes() {
         create_user_and_login_with_username(&app, "speaker", "a0@test.fr", "pass", &Role::Author)
             .await;
 
-    let (status_code, _) = post_create_joke_request(&app, json!({}), Some(&jwt)).await;
+    let (status_code, _) = post_create_joke_request(&app, valid_joke(), Some(&jwt)).await;
     assert_eq!(status_code, StatusCode::OK);
 }
 
@@ -57,7 +71,7 @@ async fn none_cannot_create_jokes() {
         create_user_and_login_with_username(&app, "noneuser", "a0@test.fr", "pass", &Role::None)
             .await;
 
-    let (status_code, _) = post_create_joke_request(&app, json!({}), Some(&jwt)).await;
+    let (status_code, _) = post_create_joke_request(&app, valid_joke(), Some(&jwt)).await;
     assert_eq!(status_code, StatusCode::UNAUTHORIZED);
 }
 
@@ -65,7 +79,7 @@ async fn none_cannot_create_jokes() {
 async fn anonymous_cannot_create_jokes() {
     let app = spawn_app().await;
 
-    let (status_code, _) = post_create_joke_request(&app, json!({}), None).await;
+    let (status_code, _) = post_create_joke_request(&app, valid_joke(), None).await;
     assert_eq!(status_code, StatusCode::UNAUTHORIZED);
 }
 
@@ -77,20 +91,12 @@ async fn creates_valid_jokes_returning_id() {
         create_user_and_login_with_username(&app, "admin", "a0@test.fr", "pass", &Role::Admin)
             .await;
 
-    let joke = json!({
-        "title": "Test",
-        "lines": [
-            { "speaker": "Author1", "content": "blabl abalab la balabba abalba" },
-            { "speaker": "Ahor3", "content": "blabl abaladzadazhalabba abalba" },
-            { "speaker": "Aut862or2", "content": "blabl ab abalba" },
-            { "speaker": "Author8", "content": "blabl abalab laaza87131 abalba" },
-            { "speaker": "Auth", "content": "blabl alabba abalba" },
-            { "speaker": "Author1", "content": "blabl abalab la^aa$$ba abalba" }
-        ]
-    });
-
-    let (status_code, body) = post_create_joke_request(&app, joke, Some(&jwt)).await;
+    let (status_code, body) = post_create_joke_request(&app, valid_joke(), Some(&jwt)).await;
     assert_eq!(status_code, StatusCode::OK);
     assert_eq!(body["success"].as_bool().unwrap(), true);
     assert!(body["created_joke"]["id"].as_i64().is_some());
+
+    println!("{:#?}", body);
+
+    assert!(false);
 }

@@ -22,14 +22,30 @@ impl Error {
     }
 }
 
+pub fn disallow_anonymous_and_role(
+    req: &HttpRequest,
+    role: Role,
+) -> Result<token::Claims, Error> {
+    match auth_user(req) {
+        Ok(claims) => {
+            if role != claims.role {
+                Ok(claims)
+            } else {
+                Err(Error::RoleNotAllowed)
+            }
+        }
+        Err(err) => Err(err),
+    }
+}
+
 pub fn enforce_role(
     req: &HttpRequest,
     role: Role,
-) -> Result<(), Error> {
+) -> Result<token::Claims, Error> {
     match auth_user(req) {
-        Ok(token::Claims{ role: user_role, ..}) => {
-            if role == user_role {
-                Ok(())
+        Ok(claims) => {
+            if role == claims.role {
+                Ok(claims)
             } else {
                 Err(Error::RoleNotAllowed)
             }
